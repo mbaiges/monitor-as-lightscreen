@@ -1,62 +1,49 @@
 from tkinter import *
-import random
-import math
 
-root = Tk()
+from models.Context import Context
+from models.commands.SwitchPlainColorCommand import Direction, SwitchPlainColorCommand
+from models.commands.RandomPlainColorCommand import RandomPlainColorCommand
 
-screen_width = 1920
-screen_height = 1080
+tk = Tk()
 canvas = None
-canvas_width = screen_width
-canvas_height = screen_height
+width = 1920
+height = 1080
+vars = {}
 
-color_idx = 0
-
-predefined_colors = {
-    'white': {
-        'hex': '#FFFFFF'
-    },
-    'pink': {
-        'hex': '#F8B5FF'
-    }
-}
+ctx = Context(tk, canvas, width, height)
 
 def init():
-    global canvas, canvas_width, canvas_height, screen_width, screen_height
+    global ctx
 
-    canvas_width = screen_width
-    canvas_height = screen_height
+    canvas_width = ctx.width
+    canvas_height = ctx.height
 
-    canvas = Canvas(root, 
+    ctx.canvas = Canvas(ctx.tk, 
             width=canvas_width,
             height=canvas_height)
-    canvas.pack()
+    ctx.canvas.pack()
 
-    update(None)
+    ctx.tk.bind("<Key>", key_handler)
+    ctx.tk.bind("<Left>", lambda event: SwitchPlainColorCommand().with_arguments({'direction': Direction.LEFT}).with_context(ctx).execute())
+    ctx.tk.bind("<Right>", lambda event: SwitchPlainColorCommand().with_arguments({'direction': Direction.RIGHT}).with_context(ctx).execute())
 
-def update(event):
-    global canvas, canvas_width, canvas_height, screen_width, screen_height, color_idx
+def key_handler(event):
+    global ctx
 
-    c = "#FFFFFF"
+    cmd = None
 
     if event is not None or hasattr(event, 'char'):
         char = event.char
 
-        hex_colors = list(map(lambda o: o['hex'], predefined_colors.values()))
-
         if char == 'a':
-            color_idx = color_idx - 1 if color_idx > 0 else color_idx
-            c = hex_colors[color_idx]
+            cmd = SwitchPlainColorCommand().with_arguments({'direction': Direction.LEFT})
         elif char == 'd':
-            color_idx = color_idx + 1 if color_idx < (len(hex_colors)-1) else color_idx
-            c = hex_colors[color_idx]
+            cmd = SwitchPlainColorCommand().with_arguments({'direction': Direction.RIGHT})
         elif char == 'r':
-            r = random.randint(0, math.pow(2, 24))
-            c = str(hex(r)).replace('0x', '#')
+            cmd = RandomPlainColorCommand()
 
-    canvas.create_rectangle(0, 0, canvas_width, canvas_height, fill=c)
-
-    root.bind("<Key>", update)
+    if cmd is not None:
+        cmd.with_context(ctx).execute()
 
 init()
 
